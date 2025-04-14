@@ -9,6 +9,7 @@ type Lippu = {
 
 function App() {
   const [koodi, setKoodi] = useState('')
+  const [token, setToken] = useState('')
   const [lippu, setLippu] = useState<Lippu | null>(null)
   const [viesti, setViesti] = useState<string | null>(null)
   const [virhe, setVirhe] = useState<string | null>(null)
@@ -19,20 +20,22 @@ function App() {
     setLippu(null)
 
     try {
-        const res = await fetch(`/api/liput?koodi=${encodeURIComponent(koodi)}`, {
-        credentials: 'include' // säilyttää JWT cookien
+      const res = await fetch(`/api/liput?koodi=${encodeURIComponent(koodi)}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       })
       if (!res.ok) throw new Error('Lippua ei löytynyt')
 
       const data: Lippu = await res.json()
       setLippu(data)
     } catch (err) {
-        if (err instanceof Error) {
-          setVirhe(err.message)
-        } else {
-          setVirhe('Tuntematon virhe')
-        }
+      if (err instanceof Error) {
+        setVirhe(err.message)
+      } else {
+        setVirhe('Tuntematon virhe')
       }
+    }
   }
 
   const kaytaLippu = async () => {
@@ -41,10 +44,11 @@ function App() {
     setVirhe(null)
 
     try {
-        const res = await fetch(`/api/liput/${lippu.id}`, {
-
+      const res = await fetch(`/api/liput/${lippu.id}`, {
         method: 'PATCH',
-        credentials: 'include' // tärkeää säilyttää cookie myös tässä pyynnössä
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       })
 
       if (!res.ok) throw new Error('Virhe lipun päivittämisessä')
@@ -52,17 +56,30 @@ function App() {
       setLippu(paivitetty)
       setViesti('Lippu merkittiin käytetyksi')
     } catch (err) {
-        if (err instanceof Error) {
-          setVirhe(err.message)
-        } else {
-          setVirhe('Tuntematon virhe')
-        }
+      if (err instanceof Error) {
+        setVirhe(err.message)
+      } else {
+        setVirhe('Tuntematon virhe')
       }
+    }
   }
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
       <h1>Lipputarkistus</h1>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <label>
+          Token:{' '}
+          <input
+            type="text"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            style={{ width: '400px', marginLeft: '1rem' }}
+            placeholder="Syötä JWT-token"
+          />
+        </label>
+      </div>
 
       <label>
         Lippukoodi:{' '}
