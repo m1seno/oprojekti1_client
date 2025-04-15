@@ -9,7 +9,7 @@ type Lippu = {
 
 function App() {
   const [koodi, setKoodi] = useState('')
-  const [token, setToken] = useState('')
+  const [token, setToken] = useState('') // kommentoi pois jos käytät Credentialseja
   const [lippu, setLippu] = useState<Lippu | null>(null)
   const [viesti, setViesti] = useState<string | null>(null)
   const [virhe, setVirhe] = useState<string | null>(null)
@@ -19,6 +19,9 @@ function App() {
     setVirhe(null)
     setLippu(null)
 
+
+    // Tokenilla toimiva koodi:
+
     try {
       const res = await fetch(`/api/liput?koodi=${encodeURIComponent(koodi)}`, {
         headers: {
@@ -26,6 +29,7 @@ function App() {
         }
       })
       if (!res.ok) throw new Error('Lippua ei löytynyt')
+
 
       const data = await res.json()
       console.log('Lippu vastaus:', data)
@@ -43,6 +47,27 @@ function App() {
       }
     }
   }
+    
+
+
+// Credentialseilla toimiva koodi:
+/*
+  try {
+    const res = await fetch(`/api/liput?koodi=${encodeURIComponent(koodi)}`, {
+    credentials: 'include' // säilyttää JWT cookien
+  })
+  if (!res.ok) throw new Error('Lippua ei löytynyt')
+
+  const data: Lippu = await res.json()
+  setLippu(data)
+} catch (err) {
+    if (err instanceof Error) {
+      setVirhe(err.message)
+    } else {
+      setVirhe('Tuntematon virhe')
+    }
+  }
+}*/
 
   const kaytaLippu = async () => {
     if (!lippu) return
@@ -52,6 +77,8 @@ function App() {
     console.log('Lippu ID:', lippu.lippuId)
     console.log('PATCH osoitteeseen:', `/api/liput/${lippu.lippuId}`)
 
+
+    // Tokenilla toimiva koodi: 
     try {
       const res = await fetch(`/api/liput/${lippu.lippuId}`, {
         method: 'PATCH',
@@ -59,6 +86,15 @@ function App() {
           Authorization: `Bearer ${token}`
         }
       })
+
+      // Credentialseilla toimiva koodi:
+      /*
+      try {
+        const res = await fetch(`/api/liput/${lippu.lippuId}`, {
+
+        method: 'PATCH',
+        credentials: 'include' // tärkeää säilyttää cookie myös tässä pyynnössä
+      })*/
 
       if (!res.ok) throw new Error('Virhe lipun päivittämisessä')
       const paivitetty: Lippu = await res.json()
@@ -76,7 +112,8 @@ function App() {
   return (
     <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
       <h1>Lipputarkistus</h1>
-
+  
+      { // Tämä lisää tokenin kysyvän lomakkeen 
       <div style={{ marginBottom: '1rem' }}>
         <label>
           Token:{' '}
@@ -88,8 +125,9 @@ function App() {
             placeholder="Syötä JWT-token"
           />
         </label>
-      </div>
-
+      </div> // kommentoi pois jos kokeilet credentialseilla toimivaa koodia
+      }
+  
       <label>
         Lippukoodi:{' '}
         <input
@@ -99,10 +137,10 @@ function App() {
         />
       </label>
       <button onClick={haeLippu}>Hae</button>
-
+  
       {virhe && <p style={{ color: 'red' }}>{virhe}</p>}
       {viesti && <p style={{ color: 'green' }}>{viesti}</p>}
-
+  
       {lippu && (
         <div style={{ marginTop: '1rem' }}>
           <pre>{JSON.stringify(lippu, null, 2)}</pre>
