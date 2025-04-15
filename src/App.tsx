@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 type Lippu = {
-  id: number
+  lippuId: number
   koodi: string
   status: string
   // Lisää kenttiä tarvittaessa
@@ -27,8 +27,14 @@ function App() {
       })
       if (!res.ok) throw new Error('Lippua ei löytynyt')
 
-      const data: Lippu = await res.json()
-      setLippu(data)
+      const data = await res.json()
+      console.log('Lippu vastaus:', data)
+
+      if (Array.isArray(data)) {
+        setLippu(data[0]) // Oletetaan että tulee yksi lippu
+      } else {
+        setLippu(data)
+      }
     } catch (err) {
       if (err instanceof Error) {
         setVirhe(err.message)
@@ -43,11 +49,14 @@ function App() {
     setViesti(null)
     setVirhe(null)
 
+    console.log('Lippu ID:', lippu.lippuId)
+    console.log('PATCH osoitteeseen:', `/api/liput/${lippu.lippuId}`)
+
     try {
-      const res = await fetch(`/api/liput/${lippu.id}`, {
+      const res = await fetch(`/api/liput/${lippu.lippuId}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         }
       })
 
@@ -91,7 +100,7 @@ function App() {
       </label>
       <button onClick={haeLippu}>Hae</button>
 
-      {virhe && <p style={{ color: 'red' }}> {virhe}</p>}
+      {virhe && <p style={{ color: 'red' }}>{virhe}</p>}
       {viesti && <p style={{ color: 'green' }}>{viesti}</p>}
 
       {lippu && (
