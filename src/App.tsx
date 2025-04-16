@@ -1,156 +1,22 @@
-import { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
+import Lipunmyynti from "./Lipunmyynti";
+import Login from "./login";
+import Lipuntarkastus from "./Lipuntarkastus";
 
-type Lippu = {
-  lippuId: number
-  koodi: string
-  status: string
-  // Lisää kenttiä tarvittaessa
-}
-
-function App() {
-  const [koodi, setKoodi] = useState('')
-  const [token, setToken] = useState('') // kommentoi pois jos käytät Credentialseja
-  const [lippu, setLippu] = useState<Lippu | null>(null)
-  const [viesti, setViesti] = useState<string | null>(null)
-  const [virhe, setVirhe] = useState<string | null>(null)
-
-  const haeLippu = async () => {
-    setViesti(null)
-    setVirhe(null)
-    setLippu(null)
-
-
-    // Tokenilla toimiva koodi:
-
-    try {
-      const res = await fetch(`/api/liput?koodi=${encodeURIComponent(koodi)}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      if (!res.ok) throw new Error('Lippua ei löytynyt')
-
-
-      const data = await res.json()
-      console.log('Lippu vastaus:', data)
-
-      if (Array.isArray(data)) {
-        setLippu(data[0]) // Oletetaan että tulee yksi lippu
-      } else {
-        setLippu(data)
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        setVirhe(err.message)
-      } else {
-        setVirhe('Tuntematon virhe')
-      }
-    }
-  }
-    
-
-
-// Credentialseilla toimiva koodi:
-/*
-  try {
-    const res = await fetch(`/api/liput?koodi=${encodeURIComponent(koodi)}`, {
-    credentials: 'include' // säilyttää JWT cookien
-  })
-  if (!res.ok) throw new Error('Lippua ei löytynyt')
-
-  const data: Lippu = await res.json()
-  setLippu(data)
-} catch (err) {
-    if (err instanceof Error) {
-      setVirhe(err.message)
-    } else {
-      setVirhe('Tuntematon virhe')
-    }
-  }
-}*/
-
-  const kaytaLippu = async () => {
-    if (!lippu) return
-    setViesti(null)
-    setVirhe(null)
-
-    console.log('Lippu ID:', lippu.lippuId)
-    console.log('PATCH osoitteeseen:', `/api/liput/${lippu.lippuId}`)
-
-
-    // Tokenilla toimiva koodi: 
-    try {
-      const res = await fetch(`/api/liput/${lippu.lippuId}`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-      // Credentialseilla toimiva koodi:
-      /*
-      try {
-        const res = await fetch(`/api/liput/${lippu.lippuId}`, {
-
-        method: 'PATCH',
-        credentials: 'include' // tärkeää säilyttää cookie myös tässä pyynnössä
-      })*/
-
-      if (!res.ok) throw new Error('Virhe lipun päivittämisessä')
-      const paivitetty: Lippu = await res.json()
-      setLippu(paivitetty)
-      setViesti('Lippu merkittiin käytetyksi')
-    } catch (err) {
-      if (err instanceof Error) {
-        setVirhe(err.message)
-      } else {
-        setVirhe('Tuntematon virhe')
-      }
-    }
-  }
+const App = () => {
+  const [token, setToken] = useState<string | null>(null);
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Arial, sans-serif' }}>
-      <h1>Lipputarkistus</h1>
-  
-      { // Tämä lisää tokenin kysyvän lomakkeen 
-      <div style={{ marginBottom: '1rem' }}>
-        <label>
-          Token:{' '}
-          <input
-            type="text"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            style={{ width: '400px', marginLeft: '1rem' }}
-            placeholder="Syötä JWT-token"
-          />
-        </label>
-      </div> // kommentoi pois jos kokeilet credentialseilla toimivaa koodia
-      }
-  
-      <label>
-        Lippukoodi:{' '}
-        <input
-          value={koodi}
-          onChange={(e) => setKoodi(e.target.value)}
-          style={{ marginRight: '1rem' }}
-        />
-      </label>
-      <button onClick={haeLippu}>Hae</button>
-  
-      {virhe && <p style={{ color: 'red' }}>{virhe}</p>}
-      {viesti && <p style={{ color: 'green' }}>{viesti}</p>}
-  
-      {lippu && (
-        <div style={{ marginTop: '1rem' }}>
-          <pre>{JSON.stringify(lippu, null, 2)}</pre>
-          {lippu.status !== 'KÄYTETTY' && (
-            <button onClick={kaytaLippu}>Merkitse käytetyksi</button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<Login setToken={setToken} />} />
+        <Route path="/lipunmyynti" element={token ? <Lipunmyynti token={token} /> : <Navigate to="/login" />} />
+        <Route path="/lipuntarkastus" element={token ? <Lipuntarkastus token={token} /> : <Navigate to="/login" />} />
+      </Routes>
+    </Router>
+  );
+};
 
-export default App
+export default App;
