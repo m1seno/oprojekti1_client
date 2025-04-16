@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://ticket-guru-git-ohjelmistoprojekti-1.2.rahtiapp.fi',
+        target: 'https://ohjelmistoprojekti-1-git-oprojekti1.2.rahtiapp.fi',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
