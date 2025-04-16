@@ -1,6 +1,5 @@
-// src/Lipunmyynti.tsx
 import { useEffect, useState } from "react";
-
+// Asetetaan tyypit tapahtumille ja lipuille
 interface Tapahtuma {
   tapahtumaId: number;
   tapahtumaNimi: string;
@@ -20,9 +19,10 @@ function Lipunmyynti({ token }: { token: string }) {
   const [tapahtumat, setTapahtumat] = useState<Tapahtuma[]>([]);
   const [valittuTapahtumaId, setValittuTapahtumaId] = useState<number | null>(null);
   const [tapahtumaliput, setTapahtumaliput] = useState<Tapahtumalippu[]>([]);
-  const [selectedTickets, setSelectedTickets] = useState<number[]>([]);
+  const [selectedTickets, setSelectedTickets] = useState<{ [id: number]: number }>({});
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+
 
   // Haetaan kaikki tapahtumat
   useEffect(() => {
@@ -40,7 +40,7 @@ function Lipunmyynti({ token }: { token: string }) {
       });
   }, [token]);
 
-  // Hae tapahtumaliput tapahtumaId:n perusteella
+  // Haetaan tapahtumaliput tapahtumaId:n perusteella
   useEffect(() => {
     if (!valittuTapahtumaId) return;
 
@@ -58,25 +58,33 @@ function Lipunmyynti({ token }: { token: string }) {
       });
   }, [valittuTapahtumaId, token]);
 
-  const handleCheckboxChange = (id: number) => {
-    setSelectedTickets(prev =>
-      prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]
-    );
+  // Tilamuuttuja päivittää valittujen lippujen määrät
+  const handleQuantityChange = (id: number, qty: number) => {
+    setSelectedTickets(prev => ({
+      ...prev,
+      [id]: qty
+    }));
   };
 
+  // Päivitetään sähköpostin tilamuuttuja
   const handleSubmit = () => {
-    if (!valittuTapahtumaId || !selectedTickets.length || !email) {
-      setMessage("Täytä kaikki tiedot ja valitse vähintään yksi lippu.");
+    if (!valittuTapahtumaId || !email) {
+      setMessage("Täytä sähköposti ja valitse tapahtuma.");
       return;
     }
 
+    // Otetaan talteen lipun myynnin tiedot
     const payload = {
       myyntiaika: new Date().toISOString(),
       tyontekijaId: 1,
       email,
-      liput: selectedTickets.map(id => ({ tapahtumalippuId: id }))
+      liput: Object.entries(selectedTickets)
+        .flatMap(([id, count]) =>
+          Array(count).fill({ tapahtumalippuId: Number(id) })
+        )
     };
 
+    // Lähetetään POST-pyyntö myynnin tallentamiseksi
     fetch("/api/myynnit/", {
       method: "POST",
       headers: {
@@ -92,7 +100,7 @@ function Lipunmyynti({ token }: { token: string }) {
       .then(data => {
         setMessage(`Myynti onnistui! Myynti-ID: ${data.myyntiId}`);
         setEmail("");
-        setSelectedTickets([]);
+        setSelectedTickets({});
       })
       .catch(err => {
         console.error(err);
@@ -107,6 +115,7 @@ function Lipunmyynti({ token }: { token: string }) {
       {message && <p className="mb-2 text-blue-600">{message}</p>}
 
       <label className="block mb-2 font-semibold">Valitse tapahtuma:</label>
+      {/* Näytetään lista tapahtumista */}
       <select
         value={valittuTapahtumaId ?? ""}
         onChange={e => setValittuTapahtumaId(Number(e.target.value))}
@@ -120,6 +129,7 @@ function Lipunmyynti({ token }: { token: string }) {
         ))}
       </select>
 
+        {/* Pyydetään käyttäjää syöttämään asiakkaan sähköposti */}
       <input
         type="email"
         placeholder="Asiakkaan sähköposti"
@@ -128,19 +138,24 @@ function Lipunmyynti({ token }: { token: string }) {
         className="w-full mb-4 p-2 border"
       />
 
+    
+        {/* Näytetään tapahtumaliput, jos tapahtuma on valittu */}
       {tapahtumaliput.length > 0 && (
         <div>
-          <label className="block mb-2 font-semibold">Valitse liput:</label>
+          <label className="block mb-2 font-semibold">Valitse liput ja määrät:</label>
           {tapahtumaliput.map(l => (
-            <label key={l.tapahtumalippuId} className="block mb-2">
+            <div key={l.tapahtumalippuId} className="mb-3">
+              <label className="block font-medium mb-1">
+                {l.asiakastyyppi.asiakastyyppi} - {l.hinta.toFixed(2)} €
+              </label>
               <input
-                type="checkbox"
-                checked={selectedTickets.includes(l.tapahtumalippuId)}
-                onChange={() => handleCheckboxChange(l.tapahtumalippuId)}
-                className="mr-2"
+                type="number"
+                min={0}
+                value={selectedTickets[l.tapahtumalippuId] || 0}
+                onChange={(e) => handleQuantityChange(l.tapahtumalippuId, Number(e.target.value))}
+                className="w-20 p-1 border"
               />
-              {l.asiakastyyppi.asiakastyyppi} – {l.hinta.toFixed(2)} €
-            </label>
+            </div>
           ))}
         </div>
       )}
