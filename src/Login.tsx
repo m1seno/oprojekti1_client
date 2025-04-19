@@ -38,6 +38,7 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
       {error && <p className="text-red-500 mb-2">{error}</p>}
       <input
         type="email"
+        name="email"
         placeholder="Sähköposti"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -45,6 +46,7 @@ const Login = ({ setToken }: { setToken: (token: string) => void }) => {
       />
       <input
         type="password"
+        name="password"
         placeholder="Salasana"
         value={salasana}
         onChange={(e) => setSalasana(e.target.value)}

@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 import Lipunmyynti from "./Lipunmyynti";
-import Login from "./login";
+import Login from "./Login";
 // import Lipuntarkastus from "./Lipuntarkastus";
 
 const App = () => {
