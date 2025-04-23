@@ -68,7 +68,7 @@ function Lipunmyynti({ token }: { token: string }) {
 
   // Päivitetään sähköpostin tilamuuttuja
   const handleSubmit = () => {
-    if (!valittuTapahtumaId || !email) {
+    if (!valittuTapahtumaId) {
       setMessage("Täytä sähköposti ja valitse tapahtuma.");
       return;
     }
