@@ -69,19 +69,16 @@ function Lipunmyynti({ token }: { token: string }) {
   // Päivitetään sähköpostin tilamuuttuja
   const handleSubmit = () => {
     if (!valittuTapahtumaId) {
-      setMessage("Täytä sähköposti ja valitse tapahtuma.");
+      setMessage("Valitse tapahtuma.");
       return;
     }
 
-    // Otetaan talteen lipun myynnin tiedot
-    const payload = {
+    // Otetaan talteen myyntitapahtuman tiedot
+    const myyntiPayload = {
       myyntiaika: new Date().toISOString(),
       tyontekijaId: 1,
       email,
-      liput: Object.entries(selectedTickets)
-        .flatMap(([id, count]) =>
-          Array(count).fill({ tapahtumalippuId: Number(id) })
-        )
+      liput: []
     };
 
     // Lähetetään POST-pyyntö myynnin tallentamiseksi
@@ -91,14 +88,30 @@ function Lipunmyynti({ token }: { token: string }) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(myyntiPayload)
     })
       .then(res => {
         if (!res.ok) throw new Error("Myynnin luonti epäonnistui.");
         return res.json();
       })
-      .then(data => {
-        setMessage(`Myynti onnistui! Myynti-ID: ${data.myyntiId}`);
+      .then(async (data) => {
+        const myyntiId = data.myyntiId;
+
+        const liput = Object.entries(selectedTickets)
+          .flatMap(([id, count]) => Array(count).fill(Number(id)));
+
+        for (const tapahtumalippuId of liput) {
+          await fetch("/api/liput/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ myyntiId, tapahtumalippuId })
+          });
+        }
+
+        setMessage(`Myynti onnistui! Myynti-ID: ${myyntiId}`);
         setEmail("");
         setSelectedTickets({});
       })
